@@ -1,5 +1,6 @@
 import { Routes, Route } from 'react-router-dom';
 import { ProtectedRoute } from '../components/auth/ProtectedRoute.jsx';
+import { PublicRoute } from '../components/auth/PublicRoute.jsx';
 import { RoleRoute } from '../components/auth/RoleRoute.jsx';
 import { AppLayout } from '../components/layout/AppLayout.jsx';
 import { ROLES } from '../utils/constants.js';
@@ -10,6 +11,8 @@ import { TeacherHomePage } from '../pages/TeacherHomePage.jsx';
 import { StudentHomePage } from '../pages/StudentHomePage.jsx';
 import { TeacherStudentsPage } from '../pages/TeacherStudentsPage.jsx';
 import { UsersPage } from '../pages/UsersPage.jsx';
+import { StudentsPage } from '../pages/StudentsPage.jsx';
+import { TeachersPage } from '../pages/TeachersPage.jsx';
 import { ClassesPage } from '../pages/ClassesPage.jsx';
 import { ClassDetailPage } from '../pages/ClassDetailPage.jsx';
 import { AssignmentsPage } from '../pages/AssignmentsPage.jsx';
@@ -23,7 +26,9 @@ import { NotFoundPage } from '../pages/NotFoundPage.jsx';
 export function AppRoutes() {
   return (
     <Routes>
-      <Route path="/login" element={<LoginPage />} />
+      <Route element={<PublicRoute />}>
+        <Route path="/login" element={<LoginPage />} />
+      </Route>
 
       <Route path="/" element={<ProtectedRoute />}>
         <Route element={<AppLayout />}>
@@ -37,6 +42,8 @@ export function AppRoutes() {
 
           <Route element={<RoleRoute roles={[ROLES.ADMIN]} />}>
             <Route path="users" element={<UsersPage />} />
+            <Route path="admin/students" element={<StudentsPage />} />
+            <Route path="teachers" element={<TeachersPage />} />
             <Route path="reports" element={<ReportsPage />} />
           </Route>
 

@@ -1,9 +1,5 @@
 import { API_BASE } from './constants.js';
 
-export function getStoredToken() {
-  return localStorage.getItem('token');
-}
-
 export function assetUrl(path) {
   if (!path) return '';
   if (path.startsWith('http')) return path;
@@ -18,8 +14,6 @@ export function assetUrl(path) {
 export async function api(path, options = {}) {
   const { body, headers: extraHeaders, ...rest } = options;
   const headers = { ...extraHeaders };
-  const token = getStoredToken();
-  if (token) headers.Authorization = `Bearer ${token}`;
 
   const isForm = body instanceof FormData;
   if (!isForm && body !== undefined) {
@@ -29,6 +23,7 @@ export async function api(path, options = {}) {
   const res = await fetch(`${API_BASE}${path}`, {
     ...rest,
     headers,
+    credentials: 'include',
     body: isForm ? body : body !== undefined ? JSON.stringify(body) : undefined,
   });
 

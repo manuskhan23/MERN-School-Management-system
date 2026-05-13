@@ -13,7 +13,7 @@ const router = express.Router();
 
 router.use(protect);
 
-router.route('/').get(getNotifications).post(authorize('admin', 'teacher'), createNotification);
+router.route('/').get(getNotifications).post(authorize('admin'), createNotification);
 router.get('/unread-count', getUnreadCount);
 router.put('/read-all', markAllAsRead);
 router.route('/:id/read').put(markAsRead);

@@ -50,15 +50,25 @@ export const markAllAsRead = async (req, res) => {
 // @desc Create notification / announcement
 export const createNotification = async (req, res) => {
   try {
-    const { message, type, receiverId, classId } = req.body;
+    const { message, type, classId } = req.body;
 
-    if (classId) {
-      // Send to all students in a class
-      const cls = await Class.findById(classId);
-      if (!cls) return res.status(404).json({ message: 'Class not found' });
+    if (!classId) {
+      return res.status(400).json({ message: 'classId is required' });
+    }
 
+    // Send to whole school
+    if (classId === 'whole-school') {
+      const allClasses = await Class.find();
       const notifications = [];
-      for (const studentId of cls.students) {
+      const studentIds = new Set();
+
+      for (const cls of allClasses) {
+        for (const studentId of cls.students) {
+          studentIds.add(studentId.toString());
+        }
+      }
+
+      for (const studentId of studentIds) {
         const notif = await Notification.create({
           sender: req.user._id,
           receiver: studentId,
@@ -67,23 +77,44 @@ export const createNotification = async (req, res) => {
         });
         notifications.push(notif);
       }
+
+      // Also create a notification for the sender
+      await Notification.create({
+        sender: req.user._id,
+        receiver: req.user._id,
+        message: `You sent: ${message}`,
+        type: type || 'announcement',
+        readStatus: true,
+      });
+
       return res.status(201).json({ message: `Sent to ${notifications.length} students`, notifications });
     }
 
-    if (receiverId) {
-      const notification = await Notification.create({
+    // Send to specific class
+    const cls = await Class.findById(classId);
+    if (!cls) return res.status(404).json({ message: 'Class not found' });
+
+    const notifications = [];
+    for (const studentId of cls.students) {
+      const notif = await Notification.create({
         sender: req.user._id,
-        receiver: receiverId,
+        receiver: studentId,
         message,
         type: type || 'announcement',
       });
-      return res.status(201).json(notification);
+      notifications.push(notif);
     }
 
-    // Broadcast to all (admin announcement)
-    // We don't actually store without receiver in this design
-    // Instead, we'll just return success
-    return res.status(400).json({ message: 'Please specify receiverId or classId' });
+    // Also create a notification for the sender
+    await Notification.create({
+      sender: req.user._id,
+      receiver: req.user._id,
+      message: `You sent: ${message}`,
+      type: type || 'announcement',
+      readStatus: true,
+    });
+
+    return res.status(201).json({ message: `Sent to ${notifications.length} students`, notifications });
   } catch (error) {
     res.status(500).json({ message: error.message });
   }

@@ -8,6 +8,7 @@ import { PageHeader } from '../components/ui/PageHeader.jsx';
 import { Card } from '../components/ui/Card.jsx';
 import { Button } from '../components/ui/Button.jsx';
 import { Input } from '../components/ui/Input.jsx';
+import { DateTimeInput } from '../components/ui/DateTimeInput.jsx';
 import { Textarea } from '../components/ui/Textarea.jsx';
 import { Alert } from '../components/ui/Alert.jsx';
 import { EmptyState } from '../components/ui/EmptyState.jsx';
@@ -97,6 +98,8 @@ export function AssignmentDetailPage() {
 
   const isOwnerTeacher = user?.role === ROLES.TEACHER && a.teacher?._id === user._id;
   const canEdit = user?.role === ROLES.ADMIN || isOwnerTeacher;
+  const isAssignmentDue = new Date(a.dueDate) < new Date();
+  const studentSubmission = a.submissions?.find((s) => s.student?._id === user?._id || s.student === user?._id);
 
   return (
     <>
@@ -129,7 +132,7 @@ export function AssignmentDetailPage() {
           <form onSubmit={saveEdit}>
             <Input label="Title" value={edit.title} onChange={(e) => setEdit((x) => ({ ...x, title: e.target.value }))} />
             <Textarea label="Description" value={edit.description} onChange={(e) => setEdit((x) => ({ ...x, description: e.target.value }))} />
-            <Input label="Due" type="datetime-local" value={edit.dueDate} onChange={(e) => setEdit((x) => ({ ...x, dueDate: e.target.value }))} />
+            <DateTimeInput id="dueDate" label="Due" value={edit.dueDate} onChange={(e) => setEdit((x) => ({ ...x, dueDate: e.target.value }))} />
             <div className="row-actions">
               <Button type="submit">Save</Button>
               <Button type="button" variant="danger" onClick={deleteAsg}>
@@ -142,14 +145,48 @@ export function AssignmentDetailPage() {
 
       {user?.role === ROLES.STUDENT && (
         <Card title="Your submission" style={{ marginTop: '1rem' }}>
-          <form onSubmit={submitWork}>
-            <Textarea label="Notes" value={submitText} onChange={(e) => setSubmitText(e.target.value)} />
-            <div className="field">
-              <span className="label">File</span>
-              <input type="file" className="input" onChange={(e) => setSubmitFile(e.target.files?.[0] || null)} />
+          {isAssignmentDue && !studentSubmission && (
+            <Alert message="This assignment is past due. No more submissions are allowed." />
+          )}
+          {isAssignmentDue && studentSubmission && (
+            <Alert message="This assignment is past due. You can view your submission but cannot modify it." />
+          )}
+          {!isAssignmentDue ? (
+            <form onSubmit={submitWork}>
+              <Textarea label="Notes" value={submitText} onChange={(e) => setSubmitText(e.target.value)} />
+              <div className="field">
+                <span className="label">File</span>
+                <input type="file" className="input" onChange={(e) => setSubmitFile(e.target.files?.[0] || null)} />
+              </div>
+              <Button type="submit">Submit</Button>
+            </form>
+          ) : (
+            <div>
+              {studentSubmission ? (
+                <div>
+                  <p><strong>Notes:</strong></p>
+                  <p>{studentSubmission.text || '(none)'}</p>
+                  {studentSubmission.file && (
+                    <p>
+                      <strong>File:</strong>
+                      <br />
+                      <a href={assetUrl(studentSubmission.file)} target="_blank" rel="noreferrer">
+                        {studentSubmission.file.split('/').pop()}
+                      </a>
+                    </p>
+                  )}
+                  {studentSubmission.grade && (
+                    <p><strong>Grade:</strong> {studentSubmission.grade}</p>
+                  )}
+                  {studentSubmission.feedback && (
+                    <p><strong>Feedback:</strong> {studentSubmission.feedback}</p>
+                  )}
+                </div>
+              ) : (
+                <p style={{ color: 'var(--muted)' }}>You did not submit this assignment.</p>
+              )}
             </div>
-            <Button type="submit">Submit</Button>
-          </form>
+          )}
         </Card>
       )}
 

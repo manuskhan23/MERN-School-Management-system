@@ -144,6 +144,13 @@ export const submitAssignment = async (req, res) => {
     const assignment = await Assignment.findById(req.params.id);
     if (!assignment) return res.status(404).json({ message: 'Assignment not found' });
 
+    // Check if assignment is past due
+    const now = new Date();
+    const dueDate = new Date(assignment.dueDate);
+    if (now > dueDate) {
+      return res.status(400).json({ message: 'Assignment is past due. No more submissions allowed.' });
+    }
+
     const { text } = req.body;
     const file = req.file ? req.file.path.replace(/\\/g, '/') : '';
 

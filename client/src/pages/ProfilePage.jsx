@@ -6,6 +6,7 @@ import { Card } from '../components/ui/Card.jsx';
 import { Input } from '../components/ui/Input.jsx';
 import { Button } from '../components/ui/Button.jsx';
 import { Alert } from '../components/ui/Alert.jsx';
+import { ROLES } from '../utils/constants.js';
 
 export function ProfilePage() {
   const { user, refreshUser } = useAuth();
@@ -69,15 +70,17 @@ export function ProfilePage() {
             </Button>
           </form>
         </Card>
-        <Card title="Change password">
-          <form onSubmit={savePassword}>
-            <Input label="Current password" id="oldp" type="password" value={oldPassword} onChange={(e) => setOldPassword(e.target.value)} />
-            <Input label="New password" id="newp" type="password" value={newPassword} onChange={(e) => setNewPassword(e.target.value)} />
-            <Button type="submit" disabled={busy}>
-              Update password
-            </Button>
-          </form>
-        </Card>
+        {user?.role === ROLES.ADMIN && (
+          <Card title="Change password">
+            <form onSubmit={savePassword}>
+              <Input label="Current password" id="oldp" type="password" value={oldPassword} onChange={(e) => setOldPassword(e.target.value)} />
+              <Input label="New password" id="newp" type="password" value={newPassword} onChange={(e) => setNewPassword(e.target.value)} />
+              <Button type="submit" disabled={busy}>
+                Update password
+              </Button>
+            </form>
+          </Card>
+        )}
       </div>
     </>
   );

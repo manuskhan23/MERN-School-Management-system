@@ -18,9 +18,8 @@ export function NotificationsPage() {
   const [unread, setUnread] = useState(0);
   const [error, setError] = useState('');
   const [compose, setCompose] = useState(false);
-  const [form, setForm] = useState({ message: '', classId: '', receiverId: '' });
+  const [form, setForm] = useState({ message: '', classId: '' });
   const [classes, setClasses] = useState([]);
-  const [users, setUsers] = useState([]);
 
   const load = useCallback(async () => {
     setError('');
@@ -43,12 +42,6 @@ export function NotificationsPage() {
       try {
         const c = await api('/api/classes?limit=200');
         setClasses(c.classes || []);
-        if (user.role === ROLES.ADMIN) {
-          const u = await api('/api/users?limit=300');
-          setUsers(u.users || []);
-        } else {
-          setUsers([]);
-        }
       } catch {
         /* ignore */
       }
@@ -85,23 +78,21 @@ export function NotificationsPage() {
   const send = async (e) => {
     e.preventDefault();
     try {
-      const body = { message: form.message, type: 'announcement' };
-      if (form.classId) body.classId = form.classId;
-      else if (form.receiverId && user?.role === ROLES.ADMIN) body.receiverId = form.receiverId;
-      else {
-        setError('Choose a class' + (user?.role === ROLES.ADMIN ? ' or a user.' : '.'));
+      if (!form.classId) {
+        setError('Choose a class');
         return;
       }
+      const body = { message: form.message, type: 'announcement', classId: form.classId };
       await api('/api/notifications', { method: 'POST', body });
       setCompose(false);
-      setForm({ message: '', classId: '', receiverId: '' });
+      setForm({ message: '', classId: '' });
       load();
     } catch (e) {
       setError(e.message);
     }
   };
 
-  const canCompose = user?.role === ROLES.ADMIN || user?.role === ROLES.TEACHER;
+  const canCompose = user?.role === ROLES.ADMIN;
 
   return (
     <>
@@ -173,27 +164,18 @@ export function NotificationsPage() {
         >
           <form id="notif-form" onSubmit={send}>
             <Textarea label="Message" required value={form.message} onChange={(e) => setForm((f) => ({ ...f, message: e.target.value }))} />
-            <Select label="To class (optional)" value={form.classId} onChange={(e) => setForm((f) => ({ ...f, classId: e.target.value, receiverId: '' }))}>
+            <Select label="To class" value={form.classId} onChange={(e) => setForm((f) => ({ ...f, classId: e.target.value }))} required>
               <option value="">—</option>
+              {user?.role === ROLES.ADMIN && <option value="whole-school">Whole School</option>}
               {classes.map((c) => (
                 <option key={c._id} value={c._id}>
                   {c.className} {c.section}
                 </option>
               ))}
             </Select>
-            {user?.role === ROLES.ADMIN && (
-              <Select label="Or single user" value={form.receiverId} onChange={(e) => setForm((f) => ({ ...f, receiverId: e.target.value, classId: '' }))}>
-                <option value="">—</option>
-                {users.map((u) => (
-                  <option key={u._id} value={u._id}>
-                    {u.name} ({u.role})
-                  </option>
-                ))}
-              </Select>
-            )}
             <p style={{ fontSize: '0.8rem', color: 'var(--muted)' }}>
               {user?.role === ROLES.ADMIN
-                ? 'Send to a whole class, or pick one user.'
+                ? 'Send to a specific class or the whole school.'
                 : 'Teachers: send to everyone in one of your classes.'}
             </p>
           </form>

@@ -194,7 +194,10 @@ export const updateUser = async (req, res) => {
     if (assignedClass !== undefined) {
       user.assignedClass = user.role === 'student' ? assignedClass || null : null;
     }
-    if (profileImage !== undefined) user.profileImage = profileImage;
+    if (profileImage !== undefined) {
+      user.profileImage = profileImage;
+      user.hasProfileImage = !!profileImage;
+    }
     if (status) user.status = status;
     if (registrationFee !== undefined && user.role === 'student') {
       user.registrationFee = Math.max(0, Number(registrationFee) || 0);
@@ -231,11 +234,14 @@ export const deleteUser = async (req, res) => {
 export const resetPassword = async (req, res) => {
   try {
     const { newPassword } = req.body;
+    if (req.user.role !== 'admin') {
+      return res.status(403).json({ message: 'Access denied. Only the principal has authority to reset user passwords.' });
+    }
     const user = await User.findById(req.params.id);
     if (!user) return res.status(404).json({ message: 'User not found' });
     if (principalGuard(user, res)) return;
     user.password = newPassword;
-    user.firstLogin = true;
+    user.firstLogin = false;
     await user.save();
     res.json({ message: 'Password reset successfully' });
   } catch (error) {

@@ -1,6 +1,6 @@
-import { useState } from 'react';
-import { Navigate, useLocation, useNavigate } from 'react-router-dom';
-import { useAuth } from '../context/AuthContext.jsx';
+import { useState, useEffect } from 'react';
+import { useNavigate, useLocation } from 'react-router-dom';
+import { useAuth } from '../context/AuthContext.jsx'; // Keep useAuth for login function
 import { AuthPageLayout } from '../components/layout/AuthPageLayout.jsx';
 import { Button } from '../components/ui/Button.jsx';
 import { Input } from '../components/ui/Input.jsx';
@@ -9,7 +9,7 @@ import { Alert } from '../components/ui/Alert.jsx';
 import { homePathForRole } from '../utils/authPaths.js';
 
 export function LoginPage() {
-  const { login, user, isAuthenticated, loading } = useAuth();
+  const { login, isAuthenticated, user, loading } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
   const from = location.state?.from?.pathname;
@@ -19,9 +19,17 @@ export function LoginPage() {
   const [error, setError] = useState('');
   const [submitting, setSubmitting] = useState(false);
 
-  if (!loading && isAuthenticated && user) {
-    return <Navigate to={homePathForRole(user.role)} replace />;
-  }
+  useEffect(() => {
+    // Secondary layer of defense: If authenticated, use JS navigation to redirect.
+    if (!loading && isAuthenticated && user) {
+      const dest = from && from !== '/login' ? from : homePathForRole(user.role);
+      navigate(dest, { replace: true });
+    }
+  }, [loading, isAuthenticated, user, navigate, from]);
+
+  // If we are checking auth, or we are already confirmed as logged in, 
+  // DO NOT RENDER ANYTHING (prevents seeing the form).
+  if (loading || isAuthenticated) return <div className="loading-screen" />; 
 
   const handleSubmit = async (e) => {
     e.preventDefault();

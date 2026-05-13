@@ -9,6 +9,7 @@ import { Card } from '../components/ui/Card.jsx';
 import { Button } from '../components/ui/Button.jsx';
 import { Modal } from '../components/ui/Modal.jsx';
 import { Input } from '../components/ui/Input.jsx';
+import { DateTimeInput } from '../components/ui/DateTimeInput.jsx';
 import { Textarea } from '../components/ui/Textarea.jsx';
 import { Select } from '../components/ui/Select.jsx';
 import { Alert } from '../components/ui/Alert.jsx';
@@ -146,7 +147,7 @@ export function AssignmentsPage() {
                 </option>
               ))}
             </Select>
-            <Input required label="Due date" type="datetime-local" value={form.dueDate} onChange={(e) => setForm((f) => ({ ...f, dueDate: e.target.value }))} />
+            <DateTimeInput required id="dueDate" label="Due date" validateFuture value={form.dueDate} onChange={(e) => setForm((f) => ({ ...f, dueDate: e.target.value }))} />
             <div className="field">
               <span className="label">Attachments (optional)</span>
               <input
