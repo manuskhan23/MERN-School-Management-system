@@ -1,22 +1,27 @@
-import React from 'react';
-import { Navigate, useLocation } from 'react-router-dom';
-import { useAuth } from './AuthContext.jsx';
+import { Navigate, Outlet, useLocation } from 'react-router-dom';
+import { useAuth } from '../../context/AuthContext.jsx';
 import { homePathForRole } from '../../utils/authPaths.js';
 
-export function PublicOnlyRoute({ children }) {
+export function PublicOnlyRoute() {
   const { isAuthenticated, user, loading } = useAuth();
   const location = useLocation();
 
+  // Show loading while auth state is being determined
   if (loading) {
-    // While authentication status is being determined, render nothing to prevent flicker
-    return null;
+    return (
+      <div className="loading-screen">
+        <div className="spinner"></div>
+        <p>Verifying session...</p>
+      </div>
+    );
   }
 
+  // If user is authenticated, BOUNCE them to their dashboard
   if (isAuthenticated && user) {
-    // If authenticated, BOUNCE them out to their dashboard
-    return <Navigate to={homePathForRole(user.role)} replace state={{ from: location }} />;
+    const redirectPath = homePathForRole(user.role);
+    return <Navigate to={redirectPath} replace state={{ from: location }} />;
   }
 
-  // If not authenticated, render the children (e.g., LoginPage)
-  return children;
+  // Allow unauthenticated users to access public routes (login page)
+  return <Outlet />;
 }

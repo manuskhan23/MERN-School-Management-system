@@ -3,6 +3,7 @@ import Class from '../models/Class.js';
 import generateToken from '../utils/generateToken.js';
 
 const loginPayload = (user) => ({
+  token: generateToken(user._id, user.role),
   user: {
     _id: user._id,
     name: user.name,
@@ -27,6 +28,7 @@ const setTokenCookie = (res, user) => {
     sameSite: 'strict',
     maxAge: 30 * 24 * 60 * 60 * 1000, // 30 days
   });
+  return token;
 };
 
 // @desc Register a new user (Admin only, legacy JSON body — prefer POST /api/users)
@@ -57,17 +59,7 @@ export const register = async (req, res) => {
       await Class.findByIdAndUpdate(assignedClass, { $addToSet: { students: user._id } });
     }
     setTokenCookie(res, user);
-    res.status(201).json({
-      _id: user._id,
-      name: user.name,
-      email: user.email,
-      role: user.role,
-      assignedClass: user.assignedClass,
-      status: user.status,
-      avatarColor: user.avatarColor,
-      hasProfileImage: user.hasProfileImage,
-      registrationFee: user.registrationFee,
-    });
+    res.status(201).json(loginPayload(user));
   } catch (error) {
     res.status(500).json({ message: error.message });
   }
@@ -93,7 +85,10 @@ export const login = async (req, res) => {
 
     if (user.status === 'suspended') {
       // Return a specific status or message for suspended users
-      return res.status(403).json({ message: 'Your account has been suspended. Please contact your principal for assistance.', status: 'suspended' });
+      return res.status(403).json({ 
+        message: 'Your account has been suspended. Please contact your principal for assistance.', 
+        status: 'suspended' 
+      });
     }
     const isMatch = await user.matchPassword(password);
     if (!isMatch) {
@@ -109,6 +104,13 @@ export const login = async (req, res) => {
 // @desc Logout user
 export const logout = async (req, res) => {
   try {
+    // Clear the avatar color from the database on logout as requested
+    if (req.user && req.user._id) {
+      await User.findByIdAndUpdate(req.user._id, { 
+        $unset: { avatarColor: "" } 
+      });
+    }
+
     res.cookie('token', '', { 
       httpOnly: true, 
       secure: process.env.NODE_ENV === 'production',
@@ -157,16 +159,17 @@ export const forgotPassword = async (req, res) => {
   }
 };
 
-// @desc Update profile (name, profileImage only)
+// @desc Update profile (name, profileImage, avatarColor)
 export const updateProfile = async (req, res) => {
   try {
-    const { name, profileImage } = req.body;
+    const { name, profileImage, avatarColor } = req.body;
     const user = await User.findById(req.user._id);
     if (name) user.name = name;
     if (profileImage !== undefined) {
       user.profileImage = profileImage;
       user.hasProfileImage = !!profileImage;
     }
+    if (avatarColor) user.avatarColor = avatarColor;
     const updatedUser = await user.save();
     res.json({
       _id: updatedUser._id,

@@ -3,6 +3,8 @@ import User from '../models/User.js';
 
 export const protect = async (req, res, next) => {
   let token;
+
+  // Check Authorization header first (Bearer token)
   if (req.headers.authorization && req.headers.authorization.startsWith('Bearer')) {
     try {
       token = req.headers.authorization.split(' ')[1];
@@ -13,6 +15,19 @@ export const protect = async (req, res, next) => {
       return res.status(401).json({ message: 'Not authorized, token failed' });
     }
   }
+
+  // Check cookies as fallback
+  if (req.cookies && req.cookies.token) {
+    try {
+      token = req.cookies.token;
+      const decoded = jwt.verify(token, process.env.JWT_SECRET);
+      req.user = await User.findById(decoded.id).select('-password');
+      return next();
+    } catch (error) {
+      return res.status(401).json({ message: 'Not authorized, token failed' });
+    }
+  }
+
   return res.status(401).json({ message: 'Not authorized, no token' });
 };
 
