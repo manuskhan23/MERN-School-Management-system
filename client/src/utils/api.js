@@ -6,11 +6,6 @@ export function assetUrl(path) {
   return `${API_BASE}/${path.replace(/^\//, '')}`;
 }
 
-/**
- * JSON or FormData fetch helper. Attaches Bearer token when present.
- * @param {string} path - e.g. `/api/auth/login`
- * @param {RequestInit & { body?: object | FormData }} options
- */
 export async function api(path, options = {}) {
   const { body, headers: extraHeaders, ...rest } = options;
   const headers = { ...extraHeaders };

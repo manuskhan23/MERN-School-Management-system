@@ -1,11 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 
-/**
- * Run an async function with loading / error state.
- * @param {() => Promise<any>} fn
- * @param {any[]} deps
- * @param {{ immediate?: boolean }} options
- */
 export function useAsync(fn, deps = [], options = {}) {
   const { immediate = true } = options;
   const [data, setData] = useState(null);
